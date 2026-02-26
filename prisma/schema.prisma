@@ -1,0 +1,95 @@
+// Blood Donation Management Platform - Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  password      String
+  role          String    @default("DONOR") // DONOR, HOSPITAL, ADMIN
+  phone         String?
+  address       String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  donorProfile    DonorProfile?
+  hospitalProfile HospitalProfile?
+  appointments    Appointment[]
+  bloodRequests   BloodRequest[]
+}
+
+model DonorProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bloodType   String   // A+, A-, B+, B-, AB+, AB-, O+, O-
+  dateOfBirth DateTime?
+  weight      Float?
+  lastDonation DateTime?
+  totalDonations Int   @default(0)
+  isEligible  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model HospitalProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hospitalName String
+  licenseNumber String?
+  capacity    Int      @default(100)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  inventory   BloodInventory[]
+}
+
+model BloodInventory {
+  id              String   @id @default(cuid())
+  hospitalId      String
+  hospital        HospitalProfile @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  bloodType       String   // A+, A-, B+, B-, AB+, AB-, O+, O-
+  units           Int      @default(0)
+  expirationDate  DateTime?
+  status          String   @default("AVAILABLE") // AVAILABLE, LOW, CRITICAL, EXPIRED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Appointment {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date        DateTime
+  time        String
+  location    String
+  status      String   @default("PENDING") // PENDING, CONFIRMED, COMPLETED, CANCELLED
+  notes       String?
+  bloodType   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model BloodRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bloodType   String
+  units       Int
+  urgency     String   @default("NORMAL") // LOW, NORMAL, HIGH, CRITICAL
+  status      String   @default("PENDING") // PENDING, APPROVED, FULFILLED, CANCELLED
+  reason      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
